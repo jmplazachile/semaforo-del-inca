@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Semáforo de Avance — Del Inca</title>
+<style>
+:root{
+  --v:#1D9E75;--vb:#E1F5EE;--vt:#0F6E56;
+  --a:#C07800;--ab:#FEF3DC;--at:#7A4D00;
+  --n:#C04A1A;--nb:#FDECE4;--nt:#7A2A0A;
+  --r:#C83333;--rb:#FDECEC;--rt:#8A1F1F;
+  --bg:#F2F1EE;--sur:#FFF;--bdr:#E0DDD8;
+  --tx:#111;--tx2:#666;--tx3:#AAA;
+  --rad:10px;--font:system-ui,-apple-system,'Segoe UI',sans-serif
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0F0F0E;--sur:#1A1A18;--bdr:#2C2C2A;
+  --tx:#F0EDE8;--tx2:#888;--tx3:#444;
+  --vb:#063A2A;--vt:#4DC99A;--ab:#3A2800;--at:#F0A830;
+  --nb:#3A1500;--nt:#E08060;--rb:#3A1010;--rt:#E07070
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--sur);border-bottom:1px solid var(--bdr);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.hdr-ic{width:34px;height:34px;border-radius:8px;background:var(--v);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hdr-ic svg{width:17px;height:17px;fill:#fff}
+.hdr-t{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.hdr-s{font-size:11px;color:var(--tx2);margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.refresh-btn{background:none;border:1.5px solid var(--bdr);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--font)}
+.refresh-btn:active{opacity:.6}
+.upd-time{font-size:10px;color:var(--tx3);white-space:nowrap}
+
+/* LOADING */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--v);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:14px;color:var(--tx2)}
+
+/* ERROR */
+.error-box{margin:24px 16px;background:var(--rb);border:1px solid var(--r);border-radius:var(--rad);padding:20px;text-align:center}
+.error-box h3{color:var(--rt);font-size:15px;margin-bottom:8px}
+.error-box p{color:var(--rt);font-size:13px;line-height:1.5}
+.error-box code{font-size:11px;background:rgba(0,0,0,.1);padding:2px 6px;border-radius:4px;word-break:break-all}
+.retry-btn{margin-top:14px;padding:10px 24px;background:var(--r);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)}
+
+/* SEARCH */
+.sbar{padding:10px 16px;background:var(--sur);border-bottom:1px solid var(--bdr)}
+.sbar input{width:100%;padding:10px 16px;border:1.5px solid var(--bdr);border-radius:24px;background:var(--bg);color:var(--tx);font-size:15px;outline:none;font-family:inherit}
+.sbar input:focus{border-color:var(--v)}
+
+/* PILLS */
+.pills{background:var(--sur);border-bottom:1px solid var(--bdr);padding:10px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex-shrink:0;padding:7px 14px;border-radius:24px;font-size:12px;font-weight:600;border:1.5px solid var(--bdr);background:var(--sur);color:var(--tx2);cursor:pointer;display:flex;align-items:center;gap:5px}
+.pill.on{color:#fff}
+.pill.all.on{background:var(--tx);border-color:var(--tx)}
+.pill.pv.on{background:var(--v);border-color:var(--v)}
+.pill.pa.on{background:var(--a);border-color:var(--a)}
+.pill.pn.on{background:var(--n);border-color:var(--n)}
+.pill.pr.on{background:var(--r);border-color:var(--r)}
+.ds{width:8px;height:8px;border-radius:50%}
+.ds-v{background:var(--v)}.ds-a{background:var(--a)}.ds-n{background:var(--n)}.ds-r{background:var(--r)}
+
+/* KPIs */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 4px}
+.kc{background:var(--sur);border-radius:var(--rad);padding:13px 16px;border:2px solid var(--bdr);cursor:pointer;position:relative;overflow:hidden;transition:.12s;min-height:76px}
+.kc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.kc.all::after{background:var(--tx2)}.kc.kv::after{background:var(--v)}.kc.ka::after{background:var(--a)}.kc.kn::after{background:var(--n)}.kc.kr::after{background:var(--r)}
+.kc.sel.kv{border-color:var(--v)}.kc.sel.ka{border-color:var(--a)}.kc.sel.kn{border-color:var(--n)}.kc.sel.kr{border-color:var(--r)}.kc.sel.all{border-color:var(--tx)}
+.knum{font-size:28px;font-weight:800;letter-spacing:-1.5px;line-height:1}
+.kc.kv .knum{color:var(--v)}.kc.ka .knum{color:var(--a)}.kc.kn .knum{color:var(--n)}.kc.kr .knum{color:var(--r)}.kc.all .knum{color:var(--tx)}
+.klbl{font-size:11px;color:var(--tx2);margin-top:4px;line-height:1.3}
+.kpct{font-size:10px;color:var(--tx3);margin-top:2px}
+
+/* FILTERS */
+.filters{padding:8px 16px 4px;display:flex;flex-direction:column;gap:8px}
+.fsel{width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:var(--rad);background:var(--sur);color:var(--tx);font-size:14px;font-family:inherit;outline:none}
+.fsel:focus{border-color:var(--v)}
+
+/* ALERTS BANNER */
+.alert-box{margin:6px 16px 2px;background:var(--rb);border:1px solid var(--r);border-radius:var(--rad);padding:12px 14px}
+.alert-hdr{font-size:11px;font-weight:700;color:var(--rt);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.ai{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(200,51,51,.12)}
+.ai:last-child{border-bottom:none;padding-bottom:0}
+.ai-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ai-dot.v{background:var(--v)}.ai-dot.a{background:var(--a)}.ai-dot.n{background:var(--n)}.ai-dot.r{background:var(--r)}
+.ai-name{font-size:12px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ai-d{font-size:10px;color:var(--tx3);flex-shrink:0}
+.ai-pct{font-size:11px;font-weight:700;flex-shrink:0;margin-left:4px}
+.ai-pct.v{color:var(--v)}.ai-pct.a{color:var(--a)}.ai-pct.n{color:var(--n)}.ai-pct.r{color:var(--r)}
+
+/* SECTION */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px}
+.sec-hdr span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx2)}
+.sec-hdr small{font-size:12px;color:var(--tx3)}
+
+/* CARDS */
+.cards{padding:0 16px;display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.card{background:var(--sur);border-radius:var(--rad);border:1px solid var(--bdr);overflow:hidden}
+.card-top{display:flex;align-items:stretch}
+.card-stripe{width:5px;flex-shrink:0}
+.cs-v{background:var(--v)}.cs-a{background:var(--a)}.cs-n{background:var(--n)}.cs-r{background:var(--r)}
+.card-body{flex:1;padding:10px 12px;min-width:0}
+.card-name{font-size:13px;font-weight:600;line-height:1.35}
+.card-hier{font-size:11px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-resp{font-size:11px;color:var(--tx2);margin-top:3px}
+.pbar{height:4px;background:var(--bdr);border-radius:2px;margin-top:8px;position:relative}
+.pb-e{position:absolute;top:0;left:0;height:4px;border-radius:2px}
+.pb-r{position:absolute;top:0;left:0;height:4px;border-radius:2px}
+.card-right{padding:10px 12px 10px 4px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;flex-shrink:0}
+.card-pct{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.c-v{color:var(--v)}.c-a{color:var(--a)}.c-n{color:var(--n)}.c-r{color:var(--r)}
+.wbs-t{font-size:9px;font-family:monospace;color:var(--tx3);background:var(--bg);padding:2px 5px;border-radius:4px}
+.card-foot{display:flex;align-items:center;gap:6px;padding:6px 12px 8px;border-top:1px solid var(--bdr);background:var(--bg);flex-wrap:wrap}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;white-space:nowrap}
+.bv{background:var(--vb);color:var(--vt)}.ba{background:var(--ab);color:var(--at)}.bn{background:var(--nb);color:var(--nt)}.br{background:var(--rb);color:var(--rt)}
+.foot-exp{font-size:11px;color:var(--tx2)}
+.foot-date{font-size:11px;color:var(--tx3);margin-left:auto}
+.foot-days{font-size:11px;font-weight:700}
+.fd-ok{color:var(--v)}.fd-warn{color:var(--a)}.fd-bad{color:var(--r)}.fd-na{color:var(--tx3)}
+.foot-note{width:100%;font-size:11px;color:var(--tx2);font-style:italic;border-top:1px solid var(--bdr);padding-top:5px;margin-top:2px;line-height:1.3}
+
+.empty{text-align:center;padding:48px 24px;color:var(--tx3);font-size:14px}
+.load-btn{display:block;width:calc(100% - 32px);margin:0 16px 8px;padding:12px;border-radius:var(--rad);border:1.5px solid var(--bdr);background:var(--sur);color:var(--tx);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);text-align:center}
+.footer{text-align:center;padding:16px;font-size:11px;color:var(--tx3)}
+
+/* Semaforo legend */
+.legend{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.ldot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-ic">
+    <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+  </div>
+  <div>
+    <div class="hdr-t">Edificio Del Inca</div>
+    <div class="hdr-s">Semáforo de avance</div>
+  </div>
+  <div class="hdr-right">
+    <span class="upd-time" id="upd-time"></span>
+    <button class="refresh-btn" onclick="loadData()">↻ Actualizar</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>Cargando datos desde Google Sheets…</p>
+</div>
+
+<!-- ERROR -->
+<div id="error-area" style="display:none">
+  <div class="error-box">
+    <h3>No se pudo conectar con Google Sheets</h3>
+    <p>Verifica que el Apps Script esté publicado correctamente.<br><br>
+    URL configurada:<br><code id="url-display"></code></p>
+    <button class="retry-btn" onclick="loadData()">Reintentar</button>
+  </div>
+</div>
+
+<!-- MAIN (hidden until loaded) -->
+<div id="main" style="display:none">
+
+<div class="sbar">
+  <input id="fq" type="search" placeholder="🔍  Buscar actividad, partida, responsable…" oninput="render()" autocomplete="off" autocorrect="off">
+</div>
+
+<div class="pills">
+  <div class="pill all on" id="pill-all" onclick="setColor('all')">Todos</div>
+  <div class="pill pv" id="pill-verde" onclick="setColor('verde')"><span class="ds ds-v"></span>Al día</div>
+  <div class="pill pa" id="pill-amarillo" onclick="setColor('amarillo')"><span class="ds ds-a"></span>Riesgo</div>
+  <div class="pill pn" id="pill-naranjo" onclick="setColor('naranjo')"><span class="ds ds-n"></span>Atrasada</div>
+  <div class="pill pr" id="pill-rojo" onclick="setColor('rojo')"><span class="ds ds-r"></span>Sin avance</div>
+</div>
+
+<div class="kgrid">
+  <div class="kc all sel" onclick="setColor('all')">
+    <div class="knum" id="kn0">—</div>
+    <div class="klbl">Total actividades</div>
+  </div>
+  <div class="kc kv" onclick="setColor('verde')">
+    <div class="knum" id="kn1">—</div>
+    <div class="klbl">Al día / adelantadas</div>
+    <div class="kpct" id="kp1"></div>
+  </div>
+  <div class="kc ka" onclick="setColor('amarillo')">
+    <div class="knum" id="kn2">—</div>
+    <div class="klbl">Riesgo de atraso</div>
+    <div class="kpct" id="kp2"></div>
+  </div>
+  <div class="kc kn" onclick="setColor('naranjo')">
+    <div class="knum" id="kn3">—</div>
+    <div class="klbl">Atrasadas c/ avance</div>
+    <div class="kpct" id="kp3"></div>
+  </div>
+  <div class="kc kr" onclick="setColor('rojo')">
+    <div class="knum" id="kn4">—</div>
+    <div class="klbl">Sin avance</div>
+    <div class="kpct" id="kp4"></div>
+  </div>
+</div>
+
+<div class="filters">
+  <select class="fsel" id="fsrc" onchange="render()">
+    <option value="">Todos los programas</option>
+    <option value="PISO 1 y 2">Piso 1 y 2</option>
+    <option value="Reprogramación">Reprogramación</option>
+  </select>
+  <select class="fsel" id="fpar" onchange="render()">
+    <option value="">Todas las partidas</option>
+  </select>
+  <select class="fsel" id="fresp" onchange="render()">
+    <option value="">Todos los responsables</option>
+  </select>
+  <select class="fsel" id="fvenc" onchange="render()">
+    <option value="">Cualquier vencimiento</option>
+    <option value="vencidas">Vencidas</option>
+    <option value="hoy">Vencen hoy</option>
+    <option value="semana">Próximos 7 días</option>
+    <option value="mes">Próximos 30 días</option>
+  </select>
+</div>
+
+<div class="legend">
+  <span class="leg"><span class="ldot" style="background:var(--v)"></span>Al día o adelantada</span>
+  <span class="leg"><span class="ldot" style="background:var(--a)"></span>Riesgo (&lt;20% desfase)</span>
+  <span class="leg"><span class="ldot" style="background:var(--n)"></span>Atrasada con avance</span>
+  <span class="leg"><span class="ldot" style="background:var(--r)"></span>Sin avance</span>
+</div>
+
+<div id="alert-area"></div>
+
+<div class="sec-hdr">
+  <span>Actividades</span>
+  <small id="tc">—</small>
+</div>
+
+<div class="cards" id="cards"></div>
+<div id="empty" class="empty" style="display:none">Sin resultados para los filtros seleccionados</div>
+<button id="loadbtn" class="load-btn" style="display:none" onclick="loadMore()">Cargar más actividades</button>
+
+<div class="footer" id="footer-txt">Semáforo de Avance · Edificio Del Inca · Ingetasco</div>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN ───────────────────────────────────────────
+// Reemplaza esta URL con la de tu Apps Script publicado
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKDQlZwNXnOS2ZgVlEGoC_iY43iJ8em0F8WeNRdB52uTd4MwIjoYdqTb5KXOzHdLj0Wg/exec";
+// ─────────────────────────────────────────────────────────────
+
+var D = [], fil = [], shown = 0, aColor = "all";
+var CC={verde:"#1D9E75",amarillo:"#C07800",naranjo:"#C04A1A",rojo:"#C83333"};
+var LL={verde:"Al día",amarillo:"Riesgo",naranjo:"Atrasada",rojo:"Sin avance"};
+var BB={verde:"bv",amarillo:"ba",naranjo:"bn",rojo:"br"};
+var CS={verde:"cs-v",amarillo:"cs-a",naranjo:"cs-n",rojo:"cs-r"};
+
+document.getElementById("url-display").textContent = SCRIPT_URL;
+
+function loadData() {
+  document.getElementById("loading").style.display = "flex";
+  document.getElementById("main").style.display = "none";
+  document.getElementById("error-area").style.display = "none";
+
+  fetch(SCRIPT_URL)
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      if (!resp.ok) throw new Error(resp.error || "Error en el servidor");
+      D = resp.data || [];
+      var now = new Date();
+      document.getElementById("upd-time").textContent =
+        now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+      // Populate dynamic filters
+      populateFilters();
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("main").style.display = "block";
+      // Footer date
+      var dateStr = now.toLocaleDateString("es-CL",{day:"numeric",month:"long",year:"numeric"});
+      document.getElementById("footer-txt").textContent =
+        "Semáforo de Avance · Edificio Del Inca · Actualizado " + dateStr;
+      render();
+    })
+    .catch(function(err){
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("error-area").style.display = "block";
+      console.error(err);
+    });
+}
+
+function populateFilters() {
+  // Partidas
+  var partidas = [...new Set(D.map(function(r){return r.partida;}).filter(Boolean))].sort();
+  var ps = document.getElementById("fpar");
+  ps.innerHTML = '<option value="">Todas las partidas</option>';
+  partidas.forEach(function(p){var o=document.createElement("option");o.value=p;o.textContent=p;ps.appendChild(o);});
+  // Responsables
+  var resps = [...new Set(D.map(function(r){return r.responsable;}).filter(Boolean))].sort();
+  var rs = document.getElementById("fresp");
+  rs.innerHTML = '<option value="">Todos los responsables</option>';
+  resps.forEach(function(r){var o=document.createElement("option");o.value=r;o.textContent=r;rs.appendChild(o);});
+}
+
+function setColor(c) {
+  aColor = c;
+  document.getElementById("pill-all").className = "pill all" + (c==="all"?" on":"");
+  document.getElementById("pill-verde").className = "pill pv" + (c==="verde"?" on":"");
+  document.getElementById("pill-amarillo").className = "pill pa" + (c==="amarillo"?" on":"");
+  document.getElementById("pill-naranjo").className = "pill pn" + (c==="naranjo"?" on":"");
+  document.getElementById("pill-rojo").className = "pill pr" + (c==="rojo"?" on":"");
+  document.querySelectorAll(".kc").forEach(function(k){k.classList.remove("sel");});
+  var map = {all:"all",verde:"kv",amarillo:"ka",naranjo:"kn",rojo:"kr"};
+  document.querySelectorAll(".kc." + map[c]).forEach(function(k){k.classList.add("sel");});
+  render();
+}
+
+function getFil() {
+  var src  = document.getElementById("fsrc").value;
+  var par  = document.getElementById("fpar").value;
+  var resp = document.getElementById("fresp").value;
+  var venc = document.getElementById("fvenc").value;
+  var q    = document.getElementById("fq").value.toLowerCase().trim();
+  return D.filter(function(r) {
+    if (aColor && aColor !== "all" && r.color !== aColor) return false;
+    if (src  && r.programa !== src)    return false;
+    if (par  && r.partida  !== par)    return false;
+    if (resp && r.responsable !== resp) return false;
+    if (q && !r.nombre.toLowerCase().includes(q) &&
+             !r.wbs.includes(q) &&
+             !(r.partida||"").toLowerCase().includes(q) &&
+             !(r.subpartida||"").toLowerCase().includes(q) &&
+             !(r.responsable||"").toLowerCase().includes(q) &&
+             !(r.comentario||"").toLowerCase().includes(q)) return false;
+    var d = r.dias;
+    if (venc === "vencidas" && d >= 0) return false;
+    if (venc === "hoy" && d !== 0) return false;
+    if (venc === "semana" && (d < 0 || d > 7)) return false;
+    if (venc === "mes" && (d < 0 || d > 30)) return false;
+    return true;
+  });
+}
+
+function render() {
+  fil = getFil(); shown = 0;
+  var cv=0,ca=0,cn=0,cr=0;
+  fil.forEach(function(r){
+    if(r.color==="verde")cv++;
+    else if(r.color==="amarillo")ca++;
+    else if(r.color==="naranjo")cn++;
+    else if(r.color==="rojo")cr++;
+  });
+  var t = fil.length;
+  document.getElementById("kn0").textContent = t;
+  document.getElementById("kn1").textContent = cv;
+  document.getElementById("kn2").textContent = ca;
+  document.getElementById("kn3").textContent = cn;
+  document.getElementById("kn4").textContent = cr;
+  document.getElementById("kp1").textContent = t ? Math.round(cv/t*100)+"%" : "";
+  document.getElementById("kp2").textContent = t ? Math.round(ca/t*100)+"%" : "";
+  document.getElementById("kp3").textContent = t ? Math.round(cn/t*100)+"%" : "";
+  document.getElementById("kp4").textContent = t ? Math.round(cr/t*100)+"%" : "";
+  document.getElementById("tc").textContent = t + " actividades";
+  renderAlerts();
+  document.getElementById("cards").innerHTML = "";
+  document.getElementById("empty").style.display = t ? "none" : "block";
+  appendCards(30);
+}
+
+function appendCards(n) {
+  var frag = document.createDocumentFragment();
+  var end = Math.min(shown + n, fil.length);
+  for (var i = shown; i < end; i++) {
+    var r = fil[i];
+    var col = CC[r.color];
+    var pW = Math.min(100, r.pct), eW = Math.min(100, r.esperado);
+    var hier = r.partida ? (r.subpartida ? r.partida+" › "+r.subpartida : r.partida) : "";
+    var dTxt, dCls;
+    if (r.dias < 0)     { dTxt = r.dias+"d";  dCls = "fd-bad"; }
+    else if (r.dias === 0) { dTxt = "Hoy";    dCls = "fd-warn"; }
+    else if (r.dias <= 7)  { dTxt = r.dias+"d"; dCls = "fd-warn"; }
+    else                   { dTxt = r.dias+"d"; dCls = "fd-na"; }
+    var div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML =
+      '<div class="card-top">'+
+        '<div class="card-stripe cs-'+r.color+'"></div>'+
+        '<div class="card-body">'+
+          '<div class="card-name">'+esc(r.nombre)+'</div>'+
+          (hier ? '<div class="card-hier">'+esc(hier)+'</div>' : '')+
+          (r.responsable ? '<div class="card-resp">👷 '+esc(r.responsable)+'</div>' : '')+
+          '<div class="pbar">'+
+            '<div class="pb-e" style="width:'+eW+'%;background:'+col+';opacity:.22"></div>'+
+            '<div class="pb-r" style="width:'+pW+'%;background:'+col+'"></div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="card-right">'+
+          '<span class="card-pct c-'+r.color+'">'+r.pct+'%</span>'+
+          '<span class="wbs-t">'+esc(r.wbs)+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card-foot">'+
+        '<span class="badge '+BB[r.color]+'">'+LL[r.color]+'</span>'+
+        '<span class="foot-exp">Esp. '+r.esperado+'%</span>'+
+        '<span class="foot-date">📅 '+r.termino+'</span>'+
+        '<span class="foot-days '+dCls+'">'+dTxt+'</span>'+
+        (r.comentario ? '<div class="foot-note">💬 '+esc(r.comentario)+'</div>' : '')+
+      '</div>';
+    frag.appendChild(div);
+  }
+  document.getElementById("cards").appendChild(frag);
+  shown = end;
+  document.getElementById("loadbtn").style.display = (shown < fil.length) ? "block" : "none";
+}
+
+function loadMore(){ appendCards(30); }
+
+function renderAlerts() {
+  var alerts = D.filter(function(r){ return r.color !== "verde"; })
+    .sort(function(a,b){ var o={rojo:0,naranjo:1,amarillo:2}; return (o[a.color]||3)-(o[b.color]||3); });
+  var area = document.getElementById("alert-area");
+  if (!alerts.length) { area.innerHTML = ""; return; }
+  var html = '<div class="alert-box"><div class="alert-hdr">⚠️ '+alerts.length+' actividades con alerta</div>';
+  alerts.slice(0,6).forEach(function(r) {
+    var d = r.dias;
+    var dStr = d<0 ? "vencida "+Math.abs(d)+"d" : d===0 ? "vence hoy" : d+"d";
+    html += '<div class="ai">'+
+      '<div class="ai-dot '+r.color+'"></div>'+
+      '<div class="ai-name">'+esc(r.nombre)+'</div>'+
+      (r.responsable ? '<div class="ai-d">'+esc(r.responsable)+'</div>' : '')+
+      '<div class="ai-d">'+dStr+'</div>'+
+      '<div class="ai-pct '+r.color+'">'+r.pct+'%</div>'+
+    '</div>';
+  });
+  if (alerts.length > 6)
+    html += '<div style="font-size:11px;color:var(--rt);padding-top:6px">+' +(alerts.length-6)+' más — filtra por color para ver todas</div>';
+  html += '</div>';
+  area.innerHTML = html;
+}
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Auto-load on start
+window.addEventListener("DOMContentLoaded", loadData);
+</script>
+</body>
+</html>

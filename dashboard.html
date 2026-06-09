@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dashboard Ejecutivo — Del Inca</title>
+<style>
+:root{
+  --v:#1D9E75;--vb:#E1F5EE;--vt:#0F6E56;
+  --a:#C07800;--ab:#FEF3DC;--at:#7A4D00;
+  --n:#C04A1A;--nb:#FDECE4;--nt:#7A2A0A;
+  --r:#C83333;--rb:#FDECEC;--rt:#8A1F1F;
+  --navy:#0F2544;--gold:#F59E0B;
+  --bg:#F2F1EE;--sur:#FFF;--bdr:#E0DDD8;
+  --tx:#111;--tx2:#666;--tx3:#AAA;
+  --rad:10px;--font:system-ui,-apple-system,'Segoe UI',sans-serif
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0F0F0E;--sur:#1A1A18;--bdr:#2C2C2A;
+  --tx:#F0EDE8;--tx2:#888;--tx3:#444;
+  --vb:#063A2A;--vt:#4DC99A;--ab:#3A2800;--at:#F0A830;
+  --nb:#3A1500;--nt:#E08060;--rb:#3A1010;--rt:#E07070
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--tx);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--navy);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--gold)}
+.hdr-logo{width:34px;height:34px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;font-weight:800;color:var(--navy)}
+.hdr-t{font-size:15px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.hdr-s{font-size:11px;color:#94A3B8;margin-top:1px}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.back-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--font);text-decoration:none;white-space:nowrap}
+.back-btn:active{opacity:.7}
+.refresh-btn{background:none;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 10px;font-size:12px;color:#94A3B8;cursor:pointer;font-family:var(--font)}
+.refresh-btn:active{opacity:.6}
+.upd-badge{font-size:10px;color:#94A3B8;white-space:nowrap}
+
+/* LOADING / ERROR */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px}
+.spinner{width:36px;height:36px;border:3px solid var(--bdr);border-top-color:var(--v);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{font-size:14px;color:var(--tx2)}
+.error-box{margin:24px 16px;background:var(--rb);border:1px solid var(--r);border-radius:var(--rad);padding:20px;text-align:center}
+.error-box h3{color:var(--rt);font-size:15px;margin-bottom:8px}
+.error-box p{color:var(--rt);font-size:13px;line-height:1.5}
+.retry-btn{margin-top:14px;padding:10px 24px;background:var(--r);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font)}
+
+/* FECHA CORTE */
+.fecha-banner{background:var(--navy);padding:6px 16px;display:flex;align-items:center;justify-content:space-between}
+.fecha-banner span{font-size:11px;color:#94A3B8}
+.fecha-banner strong{font-size:11px;color:var(--gold)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 4px}
+.kpi{background:var(--sur);border-radius:var(--rad);border:1px solid var(--bdr);padding:13px 14px;position:relative;overflow:hidden}
+.kpi-top-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1.1;margin-top:2px}
+.kpi-lbl{font-size:11px;color:var(--tx2);margin-top:4px;line-height:1.3}
+.kpi-sub{display:inline-block;margin-top:5px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px}
+
+/* SECCIÓN */
+.sec{padding:12px 16px 0}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* SEMÁFORO 4 CAJAS */
+.sem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 16px 4px}
+.sem-box{border-radius:var(--rad);padding:10px 8px;text-align:center;border:1.5px solid}
+.sem-n{font-size:24px;font-weight:800;line-height:1}
+.sem-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;line-height:1.2}
+.sem-pct{font-size:10px;margin-top:3px;opacity:.8}
+
+/* BARRAS AVANCE POR PARTIDA */
+.prog-list{padding:0 16px;display:flex;flex-direction:column;gap:7px;margin-bottom:4px}
+.prog-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px}
+.prog-label{font-size:11px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog-pct{font-size:11px;font-weight:700;min-width:32px;text-align:right}
+.prog-bar-wrap{grid-column:1/-1;height:6px;background:var(--bdr);border-radius:3px;position:relative;overflow:visible;margin-top:-4px}
+.prog-bar-esp{position:absolute;top:0;left:0;height:100%;border-radius:3px;opacity:.25}
+.prog-bar-real{position:absolute;top:0;left:0;height:100%;border-radius:3px}
+
+/* TABLA ALERTAS */
+.alert-table{margin:0 16px;background:var(--sur);border-radius:var(--rad);border:1px solid var(--bdr);overflow:hidden}
+.alert-thead{display:grid;grid-template-columns:16px 1fr 52px 40px 40px;gap:6px;padding:7px 10px;background:var(--rb);border-bottom:1px solid var(--r)}
+.alert-thead span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--rt)}
+.alert-row{display:grid;grid-template-columns:16px 1fr 52px 40px 40px;gap:6px;padding:8px 10px;border-bottom:1px solid var(--bdr);align-items:center}
+.alert-row:last-child{border-bottom:none}
+.alert-row.alt{background:var(--bg)}
+.adot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.adot-v{background:var(--v)}.adot-a{background:var(--a)}.adot-n{background:var(--n)}.adot-r{background:var(--r)}
+.a-nombre{font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.a-sub{font-size:10px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-vence{font-size:10px;color:var(--tx2);white-space:nowrap}
+.a-prog{font-size:11px;font-weight:700;color:#3B82F6;text-align:center}
+.a-real{font-size:11px;font-weight:700;text-align:center}
+.no-alerts{padding:20px;text-align:center;font-size:13px;color:var(--v);font-weight:600}
+
+/* AVANCE GENERAL */
+.avance-box{margin:0 16px;background:var(--sur);border-radius:var(--rad);border:1px solid var(--bdr);padding:14px}
+.av-row{margin-bottom:12px}
+.av-row:last-child{margin-bottom:0}
+.av-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.av-label span{font-size:12px;color:var(--tx2)}
+.av-label strong{font-size:14px;font-weight:800}
+.av-bar{height:10px;background:var(--bdr);border-radius:5px;overflow:hidden}
+.av-fill{height:100%;border-radius:5px;transition:width .6s ease}
+.av-legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
+.av-leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.av-dot{width:10px;height:4px;border-radius:2px}
+
+/* PARTIDAS CRÍTICAS */
+.criticas{margin:0 16px;display:flex;flex-direction:column;gap:6px}
+.crit-item{background:var(--sur);border-radius:var(--rad);border:1px solid var(--bdr);padding:10px 12px;border-left:4px solid}
+.crit-item.c-v{border-left-color:var(--v)}
+.crit-item.c-a{border-left-color:var(--a)}
+.crit-item.c-n{border-left-color:var(--n)}
+.crit-item.c-r{border-left-color:var(--r)}
+.crit-nombre{font-size:12px;font-weight:600}
+.crit-sub{font-size:11px;color:var(--tx3);margin-top:2px}
+.crit-pcts{display:flex;gap:8px;margin-top:6px;align-items:center}
+.crit-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
+.crit-desfase{font-size:10px;color:var(--tx3);margin-left:auto}
+
+.footer{text-align:center;padding:20px 16px 24px;font-size:11px;color:var(--tx3)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">DI</div>
+  <div>
+    <div class="hdr-t">Dashboard Ejecutivo</div>
+    <div class="hdr-s">Edificio Del Inca · Ingetasco</div>
+  </div>
+  <div class="hdr-right">
+    <span class="upd-badge" id="upd-time"></span>
+    <button class="refresh-btn" onclick="loadData()">↻</button>
+    <a class="back-btn" href="index.html">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Semáforo
+    </a>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>Cargando datos desde Google Sheets…</p>
+</div>
+
+<!-- ERROR -->
+<div id="error-area" style="display:none">
+  <div class="error-box">
+    <h3>No se pudo conectar con Google Sheets</h3>
+    <p>Verifica que el Apps Script esté publicado correctamente.</p>
+    <button class="retry-btn" onclick="loadData()">Reintentar</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main" style="display:none">
+
+  <div class="fecha-banner">
+    <span>Corte de información:</span>
+    <strong id="fecha-corte">—</strong>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-top-bar" style="background:#475569"></div>
+      <div class="kpi-val" id="kpi-total" style="color:#475569">—</div>
+      <div class="kpi-lbl">Total actividades</div>
+      <span class="kpi-sub" style="background:#F1F5F9;color:#475569">analizadas</span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top-bar" style="background:var(--v)"></div>
+      <div class="kpi-val" id="kpi-verde" style="color:var(--v)">—</div>
+      <div class="kpi-lbl">Al día / adelantadas</div>
+      <span class="kpi-sub" id="kpi-verde-pct" style="background:var(--vb);color:var(--vt)"></span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top-bar" style="background:var(--a)"></div>
+      <div class="kpi-val" id="kpi-alerta" style="color:var(--a)">—</div>
+      <div class="kpi-lbl">Con alerta</div>
+      <span class="kpi-sub" id="kpi-alerta-pct" style="background:var(--ab);color:var(--at)"></span>
+    </div>
+    <div class="kpi">
+      <div class="kpi-top-bar" style="background:var(--gold)"></div>
+      <div class="kpi-val" id="kpi-desfase" style="color:var(--gold)">—</div>
+      <div class="kpi-lbl">Desfase promedio</div>
+      <span class="kpi-sub" id="kpi-desfase-lbl" style="background:#FEF9C3;color:#78350F"></span>
+    </div>
+  </div>
+
+  <!-- SEMÁFORO -->
+  <div class="sec"><div class="sec-title">Semáforo general</div></div>
+  <div class="sem-grid">
+    <div class="sem-box" style="background:var(--vb);border-color:var(--v)">
+      <div class="sem-n" id="sem-v" style="color:var(--v)">—</div>
+      <div class="sem-lbl" style="color:var(--vt)">Al día</div>
+      <div class="sem-pct" id="sem-vp" style="color:var(--vt)"></div>
+    </div>
+    <div class="sem-box" style="background:var(--ab);border-color:var(--a)">
+      <div class="sem-n" id="sem-a" style="color:var(--a)">—</div>
+      <div class="sem-lbl" style="color:var(--at)">Riesgo</div>
+      <div class="sem-pct" id="sem-ap" style="color:var(--at)"></div>
+    </div>
+    <div class="sem-box" style="background:var(--nb);border-color:var(--n)">
+      <div class="sem-n" id="sem-n" style="color:var(--n)">—</div>
+      <div class="sem-lbl" style="color:var(--nt)">Atrasada</div>
+      <div class="sem-pct" id="sem-np" style="color:var(--nt)"></div>
+    </div>
+    <div class="sem-box" style="background:var(--rb);border-color:var(--r)">
+      <div class="sem-n" id="sem-r" style="color:var(--r)">—</div>
+      <div class="sem-lbl" style="color:var(--rt)">Sin avance</div>
+      <div class="sem-pct" id="sem-rp" style="color:var(--rt)"></div>
+    </div>
+  </div>
+
+  <!-- AVANCE GENERAL -->
+  <div class="sec" style="margin-top:8px"><div class="sec-title">Avance general del proyecto</div></div>
+  <div class="avance-box">
+    <div class="av-row">
+      <div class="av-label">
+        <span>Avance programado promedio</span>
+        <strong id="av-prog-pct" style="color:#3B82F6">—</strong>
+      </div>
+      <div class="av-bar"><div class="av-fill" id="av-prog-bar" style="background:#BFDBFE;width:0%"></div></div>
+    </div>
+    <div class="av-row">
+      <div class="av-label">
+        <span>Avance real promedio</span>
+        <strong id="av-real-pct" style="color:var(--v)">—</strong>
+      </div>
+      <div class="av-bar"><div class="av-fill" id="av-real-bar" style="background:var(--v);width:0%"></div></div>
+    </div>
+    <div class="av-legend">
+      <span class="av-leg"><span class="av-dot" style="background:#BFDBFE"></span>Programado</span>
+      <span class="av-leg"><span class="av-dot" style="background:var(--v)"></span>Real</span>
+    </div>
+  </div>
+
+  <!-- AVANCE POR PARTIDA -->
+  <div class="sec" style="margin-top:12px"><div class="sec-title">Avance real por partida</div></div>
+  <div class="prog-list" id="prog-partidas"></div>
+
+  <!-- ALERTAS -->
+  <div class="sec" style="margin-top:12px"><div class="sec-title">Actividades con alerta</div></div>
+  <div class="alert-table">
+    <div class="alert-thead">
+      <span></span>
+      <span>Actividad</span>
+      <span>Vence</span>
+      <span>Prog%</span>
+      <span>Real%</span>
+    </div>
+    <div id="alert-rows"></div>
+  </div>
+
+  <!-- PARTIDAS CRÍTICAS (sin avance) -->
+  <div id="criticas-sec" style="display:none">
+    <div class="sec" style="margin-top:12px"><div class="sec-title">Partidas sin avance</div></div>
+    <div class="criticas" id="criticas-list"></div>
+  </div>
+
+  <div class="footer" id="footer-txt">Dashboard Ejecutivo · Edificio Del Inca · Ingetasco</div>
+</div>
+
+<script>
+// ─── CONFIGURACIÓN — misma URL que el semáforo ───────────────
+var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKDQlZwNXnOS2ZgVlEGoC_iY43iJ8em0F8WeNRdB52uTd4MwIjoYdqTb5KXOzHdLj0Wg/exec";
+// ─────────────────────────────────────────────────────────────
+
+var D = [];
+var COLOR_MAP = { verde:'v', amarillo:'a', naranjo:'n', rojo:'r' };
+var COLOR_HEX = {
+  verde:'#1D9E75', amarillo:'#C07800', naranjo:'#C04A1A', rojo:'#C83333'
+};
+
+function loadData() {
+  document.getElementById("loading").style.display = "flex";
+  document.getElementById("main").style.display = "none";
+  document.getElementById("error-area").style.display = "none";
+
+  fetch(SCRIPT_URL)
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (!resp.ok) throw new Error(resp.error || "Error");
+      D = resp.data || [];
+      var now = new Date();
+      document.getElementById("upd-time").textContent =
+        now.getHours().toString().padStart(2,"0") + ":" +
+        now.getMinutes().toString().padStart(2,"0");
+      document.getElementById("fecha-corte").textContent =
+        now.toLocaleDateString("es-CL", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+      document.getElementById("footer-txt").textContent =
+        "Dashboard Ejecutivo · Edificio Del Inca · Actualizado " +
+        now.toLocaleDateString("es-CL", {day:"numeric", month:"long", year:"numeric"});
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("main").style.display = "block";
+      render();
+    })
+    .catch(function(err) {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("error-area").style.display = "block";
+      console.error(err);
+    });
+}
+
+function render() {
+  if (!D.length) return;
+
+  // ── Conteos semáforo ──
+  var cv=0, ca=0, cn=0, cr=0;
+  D.forEach(function(r) {
+    if (r.color === "verde")    cv++;
+    else if (r.color === "amarillo") ca++;
+    else if (r.color === "naranjo")  cn++;
+    else if (r.color === "rojo")     cr++;
+  });
+  var t = D.length;
+  var alertas = ca + cn + cr;
+
+  document.getElementById("kpi-total").textContent = t;
+  document.getElementById("kpi-verde").textContent = cv;
+  document.getElementById("kpi-verde-pct").textContent = Math.round(cv/t*100) + "%";
+  document.getElementById("kpi-alerta").textContent = alertas;
+  document.getElementById("kpi-alerta-pct").textContent = Math.round(alertas/t*100) + "%";
+
+  document.getElementById("sem-v").textContent = cv;
+  document.getElementById("sem-a").textContent = ca;
+  document.getElementById("sem-n").textContent = cn;
+  document.getElementById("sem-r").textContent = cr;
+  document.getElementById("sem-vp").textContent = Math.round(cv/t*100) + "%";
+  document.getElementById("sem-ap").textContent = Math.round(ca/t*100) + "%";
+  document.getElementById("sem-np").textContent = Math.round(cn/t*100) + "%";
+  document.getElementById("sem-rp").textContent = Math.round(cr/t*100) + "%";
+
+  // ── Avance general ──
+  var sumEsp = 0, sumReal = 0, count = 0;
+  D.forEach(function(r) {
+    if (typeof r.esperado === 'number' && typeof r.pct === 'number') {
+      sumEsp  += r.esperado;
+      sumReal += r.pct;
+      count++;
+    }
+  });
+  var avgEsp  = count ? Math.round(sumEsp  / count) : 0;
+  var avgReal = count ? Math.round(sumReal / count) : 0;
+  var desfase = avgReal - avgEsp;
+
+  document.getElementById("av-prog-pct").textContent = avgEsp + "%";
+  document.getElementById("av-real-pct").textContent = avgReal + "%";
+  document.getElementById("av-prog-bar").style.width = Math.min(avgEsp, 100) + "%";
+  document.getElementById("av-real-bar").style.width = Math.min(avgReal, 100) + "%";
+
+  document.getElementById("kpi-desfase").textContent = (desfase >= 0 ? "+" : "") + desfase + "pp";
+  document.getElementById("kpi-desfase-lbl").textContent = desfase >= 0 ? "adelantado" : "retrasado";
+  if (desfase < 0) {
+    document.getElementById("kpi-desfase").style.color = "#C83333";
+    document.getElementById("kpi-desfase-lbl").style.background = "#FDECEC";
+    document.getElementById("kpi-desfase-lbl").style.color = "#8A1F1F";
+  }
+
+  // ── Avance por partida ──
+  var partMap = {};
+  D.forEach(function(r) {
+    var p = r.partida || "Sin partida";
+    if (!partMap[p]) partMap[p] = { sumEsp:0, sumReal:0, n:0, color:"verde" };
+    partMap[p].sumEsp  += (r.esperado || 0);
+    partMap[p].sumReal += (r.pct || 0);
+    partMap[p].n++;
+    // colour = worst in group
+    var ord = {rojo:0, naranjo:1, amarillo:2, verde:3};
+    if ((ord[r.color] || 3) < (ord[partMap[p].color] || 3))
+      partMap[p].color = r.color;
+  });
+
+  var partArr = Object.keys(partMap).map(function(k) {
+    return {
+      nombre: k,
+      esp:  Math.round(partMap[k].sumEsp  / partMap[k].n),
+      real: Math.round(partMap[k].sumReal / partMap[k].n),
+      color: partMap[k].color
+    };
+  }).sort(function(a,b){ return a.real - b.real; });
+
+  var html = "";
+  partArr.forEach(function(p) {
+    var col = COLOR_HEX[p.color];
+    html +=
+      '<div class="prog-row">' +
+        '<div class="prog-label" title="' + esc(p.nombre) + '">' + esc(p.nombre) + '</div>' +
+        '<div class="prog-pct" style="color:' + col + '">' + p.real + '%</div>' +
+        '<div class="prog-bar-wrap" style="grid-column:1/-1;margin-top:2px">' +
+          '<div class="prog-bar-esp"  style="width:' + Math.min(p.esp,100)  + '%;background:' + col + '"></div>' +
+          '<div class="prog-bar-real" style="width:' + Math.min(p.real,100) + '%;background:' + col + '"></div>' +
+        '</div>' +
+      '</div>';
+  });
+  document.getElementById("prog-partidas").innerHTML = html;
+
+  // ── Alertas ──
+  var alerts = D.filter(function(r) { return r.color !== "verde"; })
+    .sort(function(a,b) {
+      var o = {rojo:0, naranjo:1, amarillo:2};
+      if ((o[a.color]||3) !== (o[b.color]||3)) return (o[a.color]||3) - (o[b.color]||3);
+      return (a.esperado - a.pct) - (b.esperado - b.pct);
+    });
+
+  if (!alerts.length) {
+    document.getElementById("alert-rows").innerHTML =
+      '<div class="no-alerts">✅ Sin alertas activas esta semana</div>';
+  } else {
+    var aHtml = "";
+    alerts.forEach(function(r, i) {
+      var col = COLOR_HEX[r.color];
+      var dc  = COLOR_MAP[r.color];
+      var realCol = r.pct < r.esperado ? "#C83333" : "#1D9E75";
+      aHtml +=
+        '<div class="alert-row' + (i%2?' alt':'') + '">' +
+          '<div class="adot adot-' + dc + '"></div>' +
+          '<div><div class="a-nombre">' + esc(r.nombre) + '</div>' +
+            '<div class="a-sub">' + esc(r.partida||'') + (r.responsable?' · '+esc(r.responsable):'') + '</div>' +
+          '</div>' +
+          '<div class="a-vence">' + esc(r.termino||'') + '</div>' +
+          '<div class="a-prog">' + r.esperado + '%</div>' +
+          '<div class="a-real" style="color:' + realCol + '">' + r.pct + '%</div>' +
+        '</div>';
+    });
+    document.getElementById("alert-rows").innerHTML = aHtml;
+  }
+
+  // ── Sin avance ──
+  var sinAvance = D.filter(function(r) { return r.color === "rojo"; });
+  if (sinAvance.length) {
+    document.getElementById("criticas-sec").style.display = "block";
+    var cHtml = "";
+    sinAvance.forEach(function(r) {
+      cHtml +=
+        '<div class="crit-item c-r">' +
+          '<div class="crit-nombre">' + esc(r.nombre) + '</div>' +
+          '<div class="crit-sub">' + esc(r.partida||'') +
+            (r.responsable ? ' · ' + esc(r.responsable) : '') + '</div>' +
+          '<div class="crit-pcts">' +
+            '<span class="crit-badge" style="background:var(--rb);color:var(--rt)">Sin avance</span>' +
+            '<span class="crit-badge" style="background:#DBEAFE;color:#1E3A8A;margin-left:4px">Esp. ' + r.esperado + '%</span>' +
+            '<span class="crit-desfase">📅 ' + esc(r.termino||'') + '</span>' +
+          '</div>' +
+        '</div>';
+    });
+    document.getElementById("criticas-list").innerHTML = cHtml;
+  }
+}
+
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+window.addEventListener("DOMContentLoaded", loadData);
+</script>
+</body>
+</html>
